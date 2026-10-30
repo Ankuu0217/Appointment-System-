@@ -1,0 +1,81 @@
+import { useState } from 'react';
+import useAppointments from './hooks/useAppointments.js';
+import useDebouncedValue from './hooks/useDebouncedValue.js';
+import useListParams from './hooks/useListParams.js';
+import StatusFilter from './components/StatusFilter.jsx';
+import SearchInput from './components/SearchInput.jsx';
+import AppointmentList from './components/AppointmentList.jsx';
+import AddAppointmentForm from './components/AddAppointmentForm.jsx';
+
+export default function App() {
+  const { status, setStatus, initialSearch, syncSearch } = useListParams();
+  const [searchInput, setSearchInput] = useState(initialSearch);
+  const debounced = useDebouncedValue(searchInput, 300);
+  // Clearing applies immediately; typing waits for the debounce.
+  const search = (searchInput.trim() === '' ? '' : debounced).trim();
+
+  const { data, counts, loading, error, refetch } = useAppointments(status, search);
+
+  // Keep the URL in step with the applied search.
+  const [syncedSearch, setSyncedSearch] = useState(search);
+  if (syncedSearch !== search) {
+    setSyncedSearch(search);
+    syncSearch(search);
+  }
+
+  const clearSearch = () => setSearchInput('');
+
+  function handleCreated(created) {
+    const hiddenByStatus = status !== 'All' && created.status !== status;
+    const hiddenBySearch = search && !created.customerName.toLowerCase().includes(search.toLowerCase());
+    if (hiddenByStatus) setStatus('All');
+    if (hiddenBySearch) setSearchInput('');
+    if (!hiddenByStatus && !hiddenBySearch) refetch();
+  }
+
+  let body;
+  if (error) {
+    body = <p role="alert" className="empty">{error}</p>;
+  } else if (loading && data.length === 0) {
+    body = <p className="empty">Loading…</p>;
+  } else if (data.length === 0 && search) {
+    body = (
+      <div className="empty">
+        <p>{`No appointments match "${search}".`}</p>
+        <button type="button" className="btn-outline" onClick={clearSearch}>Clear search</button>
+      </div>
+    );
+  } else if (data.length === 0 && status !== 'All') {
+    body = <p className="empty">No {status.toLowerCase()} appointments.</p>;
+  } else if (data.length === 0) {
+    body = <p className="empty">No appointments yet.</p>;
+  } else {
+    body = <AppointmentList items={data} />;
+  }
+
+  return (
+    <main className="page">
+      <header className="header">
+        <p className="label">Schedule</p>
+        <h1>Appointments</h1>
+      </header>
+
+      <AddAppointmentForm onCreated={handleCreated} />
+
+      <div className="toolbar">
+        <SearchInput value={searchInput} onChange={setSearchInput} onClear={clearSearch} />
+        <StatusFilter value={status} counts={counts} onChange={setStatus} />
+      </div>
+
+      {!error && !loading && (
+        <p className="summary" aria-live="polite">
+          {search
+            ? `Showing ${data.length} of ${counts.All} appointments matching "${search}"`
+            : `Showing ${data.length} of ${counts.All} appointments`}
+        </p>
+      )}
+
+      {body}
+    </main>
+  );
+}

@@ -1,0 +1,15 @@
+import express from 'express';
+import cors from 'cors';
+import env from './config/env.js';
+import appointmentRoutes from './routes/appointments.js';
+import { notFound, errorHandler } from './middleware/errorHandler.js';
+
+const app = express();
+app.use(cors({ origin: env.CORS_ORIGIN }));
+app.use(express.json());
+app.get('/api/health', (req, res) => res.json({ ok: true }));
+app.use('/api/appointments', appointmentRoutes);
+app.use(notFound);
+app.use(errorHandler);
+
+export default app;
