@@ -7,14 +7,15 @@
 | Database | MongoDB Atlas | `MONGODB_URI` |
 | Everything locally in containers | Docker Compose | `docker-compose.yml`, `client/Dockerfile` |
 
-How the pieces talk: in production the browser calls the API directly at `VITE_API_BASE_URL` (baked into the frontend at build time). The API only answers browsers whose origin is listed in `CORS_ORIGIN`.
+How the pieces talk: the browser calls `/api/...` on the **frontend's own domain**, and Vercel (`client/vercel.json`) or the Render static site (`render.yaml` routes) forwards it to the API. There's no CORS and no build variable to get wrong.
 
 ```
-Browser ──► Vercel (static React app)
-   │
-   └──► https://<api>.onrender.com/api/...  ──► MongoDB Atlas
-          (CORS_ORIGIN must include the Vercel URL)
+Browser ──► https://<app>.vercel.app/api/...  ──(rewrite)──► https://appointments-api-lam8.onrender.com/api/...  ──► Atlas
 ```
+
+> The API URL `https://appointments-api-lam8.onrender.com` is written in `client/vercel.json` and `render.yaml`. If your API service gets a different URL, change it in both.
+>
+> Optional alternative: set `VITE_API_BASE_URL` to call the API directly from the browser. Then `CORS_ORIGIN` on the API must list every frontend URL.
 
 ---
 
@@ -73,8 +74,10 @@ Same as B, but Runtime **Docker**, Root Directory `server`, Dockerfile Path `./D
 
 1. Vercel → **Add New → Project** → import the repo.
 2. **Root Directory: `client`**. Framework preset: Vite (also set in `client/vercel.json`).
-3. **Environment Variables**:
+3. **Environment Variables**: none needed; `/api` is forwarded by `vercel.json`. Only if you choose direct calls instead:
    - `VITE_API_BASE_URL` = `https://<api-name>.onrender.com` (no trailing slash, no `/api`)
+   - Type **Config**, not Secret. It's a public URL that ends up in the browser bundle anyway, and Vercel refuses `VITE_*` secrets.
+   - Environments: tick **Production** *and* Preview. A variable scoped only to Preview is missing from the production build.
 4. **Deploy**. Note the URL, e.g. `https://appointments.vercel.app`.
 5. Back on Render, set the API's `CORS_ORIGIN` to that URL (add `,https://*.vercel.app` if you want preview deployments to work too). Saving restarts the API.
 

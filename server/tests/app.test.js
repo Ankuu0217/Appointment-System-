@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 
 // Set before app.js (and env.js) are imported, which happens in beforeAll.
-process.env.CORS_ORIGIN = 'https://app.example.com,https://*.vercel.app';
+process.env.CORS_ORIGIN = 'https://app.example.com/, "https://*.vercel.app"';
 
 let app;
 let mongo;
@@ -25,10 +25,26 @@ describe('CORS', () => {
   it('allows a wildcard match', async () => {
     expect(await allowOrigin('https://my-app-git-feature-me.vercel.app')).toBe('https://my-app-git-feature-me.vercel.app');
   });
+  it('ignores trailing slashes and quotes in CORS_ORIGIN entries', async () => {
+    // The entries above are written as "https://app.example.com/" and "\"https://*.vercel.app\"".
+    expect(await allowOrigin('https://app.example.com')).toBe('https://app.example.com');
+    expect(await allowOrigin('https://x.vercel.app')).toBe('https://x.vercel.app');
+  });
   it('rejects look-alike and other origins', async () => {
     expect(await allowOrigin('https://evil.com')).toBeUndefined();
     expect(await allowOrigin('https://evil.vercel.app.evil.com')).toBeUndefined();
     expect(await allowOrigin('https://a/b.vercel.app')).toBeUndefined();
+  });
+});
+
+describe('GET /', () => {
+  it('describes the API instead of returning 404', async () => {
+    const res = await request(app).get('/');
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ name: 'Appointments API', status: 'running' });
+  });
+  it('still 404s unknown routes', async () => {
+    expect((await request(app).get('/nope')).status).toBe(404);
   });
 });
 

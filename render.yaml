@@ -31,11 +31,12 @@ services:
     rootDir: client
     buildCommand: npm ci && npm run build
     staticPublishPath: dist
-    envVars:
-      # The API service URL, e.g. https://appointments-api.onrender.com
-      - key: VITE_API_BASE_URL
-        sync: false
+    # /api is proxied to the API service below, so the browser stays on one origin and no CORS or
+    # VITE_API_BASE_URL is needed. Rules run in order: the API rule must come before the SPA fallback.
     routes:
+      - type: rewrite
+        source: /api/*
+        destination: https://appointments-api-lam8.onrender.com/api/*
       - type: rewrite
         source: /*
         destination: /index.html

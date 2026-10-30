@@ -12,6 +12,10 @@ async function request(path, options) {
     throw new Error('Cannot reach the API server. Please try again in a moment.');
   }
   const body = await res.json().catch(() => null);
+  if (body === null) {
+    // An HTML page (e.g. the SPA's index.html) came back instead of JSON: /api isn't reaching the API.
+    throw new Error('The API address is misconfigured: /api returned a web page instead of data.');
+  }
   if (!res.ok) {
     const err = new Error(body?.error?.message || 'Request failed.');
     err.details = body?.error?.details || [];
