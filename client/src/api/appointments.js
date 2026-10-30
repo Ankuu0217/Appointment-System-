@@ -11,6 +11,7 @@ async function request(path, options) {
     // Network failure, CORS rejection or the API being down all surface as a TypeError.
     throw new Error('Cannot reach the API server. Please try again in a moment.');
   }
+  if (res.status === 204) return null; // e.g. DELETE: success with no body
   const body = await res.json().catch(() => null);
   if (body === null) {
     // An HTML page (e.g. the SPA's index.html) came back instead of JSON: /api isn't reaching the API.
@@ -46,4 +47,8 @@ export async function updateAppointmentStatus(id, status) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ status }),
   });
+}
+
+export async function deleteAppointment(id) {
+  return request(`/api/appointments/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }

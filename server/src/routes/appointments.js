@@ -8,5 +8,6 @@ const router = Router();
 router.get('/', validate(listQuerySchema, 'query'), controller.list);
 router.post('/', validate(createAppointmentSchema, 'body'), controller.create);
 router.patch('/:id', validate(updateStatusSchema, 'body'), controller.updateStatus);
+router.delete('/:id', controller.remove);
 
 export default router;

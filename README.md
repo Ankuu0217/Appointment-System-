@@ -51,6 +51,8 @@ npm run lint && npm test && npm run build
 - ✅ Appointment list, status tabs with counts, add appointment
 - ✅ Search by customer name (partial, case-insensitive, debounced 300 ms, synced to `?search=` alongside `?status=`)
 - ✅ Change an appointment's status from its row (dropdown; tab counts refresh, failed saves revert with an inline error)
+- ✅ Appointment details modal (click a name): full details, status change, delete with confirmation; keyboard accessible (focus trap, Escape, focus return)
+- ✅ Delete an appointment (from the modal, after confirming)
 
 ## Manual demo checklist
 
@@ -90,6 +92,20 @@ curl -X PATCH 'http://localhost:4000/api/appointments/<id>' \
 | 400 `INVALID_ID` | `:id` isn't a valid id |
 | 400 `INVALID_JSON` | body isn't valid JSON |
 | 404 `NOT_FOUND` | no appointment with that id |
+
+### `DELETE /api/appointments/:id`
+
+Permanently deletes one appointment. There is no bulk delete.
+
+```bash
+curl -X DELETE 'http://localhost:4000/api/appointments/<id>'
+```
+
+| Status | When |
+|--------|------|
+| 204 | deleted (no body) |
+| 400 `INVALID_ID` | `:id` isn't a valid id |
+| 404 `NOT_FOUND` | no appointment with that id (including one already deleted) |
 
 ## Change-request log
 

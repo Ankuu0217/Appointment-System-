@@ -6,6 +6,7 @@ import StatusFilter from './components/StatusFilter.jsx';
 import SearchInput from './components/SearchInput.jsx';
 import AppointmentList from './components/AppointmentList.jsx';
 import AddAppointmentForm from './components/AddAppointmentForm.jsx';
+import AppointmentModal from './components/AppointmentModal.jsx';
 import useNotice from './hooks/useNotice.js';
 
 export default function App() {
@@ -25,6 +26,8 @@ export default function App() {
   }
 
   const [notice, showNotice] = useNotice();
+  // The appointment shown in the details modal (kept as an object so it survives leaving the filtered list).
+  const [selected, setSelected] = useState(null);
 
   const clearSearch = () => setSearchInput('');
 
@@ -35,6 +38,17 @@ export default function App() {
       `${updated.customerName} marked ${updated.status}` +
         (leavesView ? ` (moved from ${previous} to the ${updated.status} tab).` : '.')
     );
+    refetch();
+  }
+
+  function handleModalStatusChanged(updated, previous) {
+    setSelected(updated);
+    handleStatusChanged(updated, previous);
+  }
+
+  function handleDeleted(deleted) {
+    setSelected(null);
+    showNotice(`Deleted the appointment for ${deleted.customerName}.`);
     refetch();
   }
 
@@ -63,7 +77,7 @@ export default function App() {
   } else if (data.length === 0) {
     body = <p className="empty">No appointments yet.</p>;
   } else {
-    body = <AppointmentList items={data} onStatusChanged={handleStatusChanged} />;
+    body = <AppointmentList items={data} onStatusChanged={handleStatusChanged} onOpen={setSelected} />;
   }
 
   return (
@@ -91,6 +105,16 @@ export default function App() {
       )}
 
       {body}
+
+      {selected && (
+        <AppointmentModal
+          key={selected._id}
+          appointment={selected}
+          onClose={() => setSelected(null)}
+          onStatusChanged={handleModalStatusChanged}
+          onDeleted={handleDeleted}
+        />
+      )}
     </main>
   );
 }

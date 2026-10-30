@@ -128,6 +128,46 @@ describe('PATCH /api/appointments/:id', () => {
   });
 });
 
+describe('DELETE /api/appointments/:id', () => {
+  const idOf = async (name) => (await Appointment.findOne({ customerName: name }))._id.toString();
+
+  it('deletes the appointment and returns 204 with no body', async () => {
+    const id = await idOf('Alex Morgan');
+    const res = await request(app).delete(`/api/appointments/${id}`);
+    expect(res.status).toBe(204);
+    expect(res.text).toBe('');
+    expect(await Appointment.findById(id)).toBeNull();
+  });
+
+  it('updates the list and counts, leaving other appointments alone', async () => {
+    await request(app).delete(`/api/appointments/${await idOf('Taylor Smith')}`);
+    const res = await request(app).get('/api/appointments');
+    expect(names(res)).toEqual(['Alex Morgan', 'Jamie Lee']);
+    expect(res.body.meta.counts).toEqual({ All: 2, Pending: 1, Confirmed: 1, Cancelled: 0 });
+  });
+
+  it('returns 404 when deleting the same appointment twice', async () => {
+    const id = await idOf('Jamie Lee');
+    await request(app).delete(`/api/appointments/${id}`);
+    const res = await request(app).delete(`/api/appointments/${id}`);
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe('NOT_FOUND');
+  });
+
+  it('returns 400 for a malformed id and deletes nothing', async () => {
+    const res = await request(app).delete('/api/appointments/not-an-id');
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('INVALID_ID');
+    expect(await Appointment.countDocuments()).toBe(3);
+  });
+
+  it('does not offer a bulk delete', async () => {
+    const res = await request(app).delete('/api/appointments');
+    expect(res.status).toBe(404);
+    expect(await Appointment.countDocuments()).toBe(3);
+  });
+});
+
 describe('search', () => {
   it('matches partially and case-insensitively', async () => {
     expect(names(await request(app).get('/api/appointments?search=ale'))).toEqual(['Alex Morgan']);
