@@ -1,0 +1,42 @@
+# Full stack locally: MongoDB + API + nginx-served client.
+#   docker compose up --build      → http://localhost:8080
+# To use Atlas instead of the bundled MongoDB, set MONGODB_URI in a root .env file.
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: ./server
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017}
+      MONGODB_DB_NAME: ${MONGODB_DB_NAME:-appointments}
+      SEED_ON_START: ${SEED_ON_START:-true}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:8080}
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  client:
+    build: ./client
+    restart: unless-stopped
+    environment:
+      API_UPSTREAM: http://api:4000
+    ports:
+      - "${CLIENT_PORT:-8080}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  mongo-data:

@@ -1,0 +1,41 @@
+# Render Blueprint: New → Blueprint → pick this repo. Values marked sync:false are asked for in the dashboard.
+services:
+  # Express API (Node runtime). Swap to `runtime: docker` + `dockerfilePath: ./Dockerfile` to use server/Dockerfile instead.
+  - type: web
+    name: appointments-api
+    runtime: node
+    rootDir: server
+    plan: free
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DB_NAME
+        value: appointments
+      - key: SEED_ON_START
+        value: "false"
+      # Your frontend URL(s), comma-separated. Wildcards allowed, e.g. https://*.vercel.app
+      - key: CORS_ORIGIN
+        sync: false
+
+  # Optional: host the frontend on Render too (skip if you use Vercel).
+  - type: web
+    name: appointments-web
+    runtime: static
+    rootDir: client
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      # The API service URL, e.g. https://appointments-api.onrender.com
+      - key: VITE_API_BASE_URL
+        sync: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

@@ -2,6 +2,8 @@
 
 Express + MongoDB API (`server/`, ES modules, Node ≥ 20.6) and a Vite + React client (`client/`).
 
+**Deploying (Render, Vercel, Docker):** see [DEPLOYMENT.md](DEPLOYMENT.md).
+
 ## Configuration
 
 Each app reads its settings from a `.env` file; copy the `.env.example` next to it (both are already copied with local defaults). `.env` files are git-ignored.
