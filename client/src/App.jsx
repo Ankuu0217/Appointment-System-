@@ -6,6 +6,7 @@ import StatusFilter from './components/StatusFilter.jsx';
 import SearchInput from './components/SearchInput.jsx';
 import AppointmentList from './components/AppointmentList.jsx';
 import AddAppointmentForm from './components/AddAppointmentForm.jsx';
+import useNotice from './hooks/useNotice.js';
 
 export default function App() {
   const { status, setStatus, initialSearch, syncSearch } = useListParams();
@@ -23,7 +24,19 @@ export default function App() {
     syncSearch(search);
   }
 
+  const [notice, showNotice] = useNotice();
+
   const clearSearch = () => setSearchInput('');
+
+  // Refetch so the tab counts update, and the row leaves the list if it no longer matches the filter.
+  function handleStatusChanged(updated, previous) {
+    const leavesView = status !== 'All' && updated.status !== status;
+    showNotice(
+      `${updated.customerName} marked ${updated.status}` +
+        (leavesView ? ` (moved from ${previous} to the ${updated.status} tab).` : '.')
+    );
+    refetch();
+  }
 
   function handleCreated(created) {
     const hiddenByStatus = status !== 'All' && created.status !== status;
@@ -50,7 +63,7 @@ export default function App() {
   } else if (data.length === 0) {
     body = <p className="empty">No appointments yet.</p>;
   } else {
-    body = <AppointmentList items={data} />;
+    body = <AppointmentList items={data} onStatusChanged={handleStatusChanged} />;
   }
 
   return (
@@ -66,6 +79,8 @@ export default function App() {
         <SearchInput value={searchInput} onChange={setSearchInput} onClear={clearSearch} />
         <StatusFilter value={status} counts={counts} onChange={setStatus} />
       </div>
+
+      <p className="notice" role="status">{notice}</p>
 
       {!error && !loading && (
         <p className="summary" aria-live="polite">

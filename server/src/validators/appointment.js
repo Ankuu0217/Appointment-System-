@@ -10,6 +10,15 @@ export const listQuerySchema = z.object({
     .optional(),
 });
 
+const statusSchema = z.enum(STATUSES, {
+  errorMap: () => ({ message: `Status must be one of: ${STATUSES.join(', ')}.` }),
+});
+
+// Only the status can change through PATCH; other fields are rejected rather than silently written.
+export const updateStatusSchema = z
+  .object({ status: statusSchema }, { invalid_type_error: 'Request body must be a JSON object.' })
+  .strict('Only "status" can be updated.');
+
 export const createAppointmentSchema = z.object({
   customerName: z.string({ required_error: 'Customer name is required.', invalid_type_error: 'Customer name must be text.' }).trim().min(1, 'Customer name is required.').max(100, 'Customer name must be at most 100 characters.'),
   service: z.string({ required_error: 'Service is required.', invalid_type_error: 'Service must be text.' }).trim().min(1, 'Service is required.').max(100, 'Service must be at most 100 characters.'),

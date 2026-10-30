@@ -50,6 +50,7 @@ npm run lint && npm test && npm run build
 
 - ✅ Appointment list, status tabs with counts, add appointment
 - ✅ Search by customer name (partial, case-insensitive, debounced 300 ms, synced to `?search=` alongside `?status=`)
+- ✅ Change an appointment's status from its row (dropdown; tab counts refresh, failed saves revert with an inline error)
 
 ## Manual demo checklist
 
@@ -72,6 +73,23 @@ curl 'http://localhost:4000/api/appointments?search=a&status=Confirmed'
 ```
 
 Errors (400 `VALIDATION_ERROR`, field `search`): `Search must be text.` (repeated param) and `Search must be at most 100 characters.`
+
+### `PATCH /api/appointments/:id`
+
+Changes an appointment's status. The body must be exactly `{ "status": "Pending" | "Confirmed" | "Cancelled" }`; any other field is rejected, so this endpoint can't edit names or dates. Any status can move to any other (including back to `Pending`); setting the current status is a no-op that returns 200.
+
+```bash
+curl -X PATCH 'http://localhost:4000/api/appointments/<id>' \
+  -H 'Content-Type: application/json' -d '{"status":"Confirmed"}'
+```
+
+| Status | When |
+|--------|------|
+| 200 | `{ "data": <updated appointment> }` |
+| 400 `VALIDATION_ERROR` | unknown/missing status, or extra fields (`Only "status" can be updated.`) |
+| 400 `INVALID_ID` | `:id` isn't a valid id |
+| 400 `INVALID_JSON` | body isn't valid JSON |
+| 404 `NOT_FOUND` | no appointment with that id |
 
 ## Change-request log
 

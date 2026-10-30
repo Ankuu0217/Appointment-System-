@@ -95,6 +95,20 @@ input:focus-visible, button:focus-visible { outline: none; box-shadow: 0 0 0 3px
 .row-meta { font-size: 14px; color: var(--color-steel); }
 .status { font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.07em; padding: 4px 12px; border: 1px solid var(--hairline); border-radius: var(--radius-pill); color: var(--color-soft-white); }
 .status-cancelled { color: var(--color-steel); }
+.row-status { flex-shrink: 0; }
+.status-select {
+  appearance: none; -webkit-appearance: none; cursor: pointer; background-color: transparent;
+  padding: 6px 30px 6px 14px; line-height: 1.5;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none' stroke='%23828384' stroke-width='1.5'%3E%3Cpath d='m1 1 4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 12px center;
+}
+.status-select:hover:not(:disabled) { border-color: var(--color-almost-white); }
+.status-select:disabled { opacity: 0.6; cursor: progress; }
+.status-select option { background: var(--color-near-black); color: var(--color-almost-white); text-transform: none; }
+.row-error { color: var(--color-lavender-mist); font-size: 14px; margin-top: 4px; }
+/* Kept in the DOM (so screen readers announce updates) but takes no space while empty. */
+.notice { font-size: 14px; color: var(--color-almost-white); }
+.notice:empty { margin-top: -24px; }
 .status-confirmed { border-color: var(--color-almost-white); }
 
 .empty { overflow-wrap: anywhere; display: grid; gap: 16px; justify-items: start; padding: 48px 0; color: var(--color-steel); }

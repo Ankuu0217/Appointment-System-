@@ -65,6 +65,69 @@ describe('GET /api/appointments', () => {
   });
 });
 
+describe('PATCH /api/appointments/:id', () => {
+  const idOf = async (name) => (await Appointment.findOne({ customerName: name }))._id.toString();
+
+  it('changes the status and returns the updated appointment', async () => {
+    const id = await idOf('Alex Morgan');
+    const res = await request(app).patch(`/api/appointments/${id}`).send({ status: 'Confirmed' });
+    expect(res.status).toBe(200);
+    expect(res.body.data).toMatchObject({ _id: id, customerName: 'Alex Morgan', status: 'Confirmed' });
+    expect((await Appointment.findById(id)).status).toBe('Confirmed');
+  });
+
+  it('is reflected in the list and the status counts', async () => {
+    await request(app).patch(`/api/appointments/${await idOf('Alex Morgan')}`).send({ status: 'Cancelled' });
+    const res = await request(app).get('/api/appointments?status=Cancelled');
+    expect(names(res)).toEqual(['Alex Morgan', 'Taylor Smith']);
+    expect(res.body.meta.counts).toEqual({ All: 3, Pending: 0, Confirmed: 1, Cancelled: 2 });
+  });
+
+  it('allows setting the same status (no-op)', async () => {
+    const res = await request(app).patch(`/api/appointments/${await idOf('Jamie Lee')}`).send({ status: 'Confirmed' });
+    expect(res.status).toBe(200);
+    expect(res.body.data.status).toBe('Confirmed');
+  });
+
+  it('can move a cancelled appointment back to pending', async () => {
+    const res = await request(app).patch(`/api/appointments/${await idOf('Taylor Smith')}`).send({ status: 'Pending' });
+    expect(res.body.data.status).toBe('Pending');
+  });
+
+  it.each([
+    ['an unknown status', { status: 'Done' }, 'Status must be one of: Pending, Confirmed, Cancelled.'],
+    ['lowercase status', { status: 'confirmed' }, 'Status must be one of: Pending, Confirmed, Cancelled.'],
+    ['a missing status', {}, 'Status must be one of: Pending, Confirmed, Cancelled.'],
+    ['other fields', { status: 'Confirmed', customerName: 'Hacker' }, 'Only "status" can be updated.'],
+  ])('rejects %s with 400 and leaves the record unchanged', async (_label, body, message) => {
+    const id = await idOf('Alex Morgan');
+    const res = await request(app).patch(`/api/appointments/${id}`).send(body);
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.message).toBe(message);
+    const doc = await Appointment.findById(id);
+    expect(doc.status).toBe('Pending');
+    expect(doc.customerName).toBe('Alex Morgan');
+  });
+
+  it('rejects a non-object body', async () => {
+    const res = await request(app).patch(`/api/appointments/${await idOf('Alex Morgan')}`).set('Content-Type', 'application/json').send('"Confirmed"');
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 for a malformed id', async () => {
+    const res = await request(app).patch('/api/appointments/not-an-id').send({ status: 'Confirmed' });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('INVALID_ID');
+  });
+
+  it('returns 404 for an id that does not exist', async () => {
+    const res = await request(app).patch(`/api/appointments/${new mongoose.Types.ObjectId()}`).send({ status: 'Confirmed' });
+    expect(res.status).toBe(404);
+    expect(res.body.error).toEqual({ code: 'NOT_FOUND', message: 'Appointment not found.' });
+  });
+});
+
 describe('search', () => {
   it('matches partially and case-insensitively', async () => {
     expect(names(await request(app).get('/api/appointments?search=ale'))).toEqual(['Alex Morgan']);

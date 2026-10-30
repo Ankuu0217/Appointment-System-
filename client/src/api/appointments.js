@@ -39,3 +39,11 @@ export async function createAppointment(payload) {
     body: JSON.stringify(payload),
   });
 }
+
+export async function updateAppointmentStatus(id, status) {
+  return request(`/api/appointments/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status }),
+  });
+}
